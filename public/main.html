@@ -1,0 +1,89 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Capture</title>
+    <script>
+        // Function to send location data to the server
+        function sendLocationToServer(latitude, longitude) {
+            const url = '/location'; // Server URL
+            const data = { lat: latitude, lon: longitude };
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                document.getElementById('status').innerText = "Location sent successfully!";
+                loadStoredLocations(); // Load stored locations after sending the new one
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                document.getElementById('status').innerText = "Error sending location.";
+            });
+        }
+
+        // Function to get the user's location
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    console.log(`Latitude: ${latitude}, Longitude: ${longitude}`);
+
+                    // Send the location to the server
+                    sendLocationToServer(latitude, longitude);
+                }, error => {
+                    console.error('Error getting location:', error);
+                    document.getElementById('status').innerText = "Error getting location.";
+                });
+            } else {
+                console.error("Geolocation is not supported by this browser.");
+                document.getElementById('status').innerText = "Geolocation is not supported by this browser.";
+            }
+        }
+
+        // Function to load all stored locations from the server
+        function loadStoredLocations() {
+            const url = '/locations'; // Endpoint to get stored locations
+
+            fetch(url)
+                .then(response => response.json())
+                .then(locations => {
+                    const locationList = document.getElementById('location-list');
+                    locationList.innerHTML = ''; // Clear the list before updating
+
+                    locations.forEach((location, index) => {
+                        const listItem = document.createElement('li');
+                        listItem.innerText = `Location ${index + 1}: Latitude = ${location.lat}, Longitude = ${location.lon}, Time = ${location.timestamp}`;
+                        locationList.appendChild(listItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading locations:', error);
+                });
+        }
+
+        // Load the stored locations when the page loads
+        window.onload = () => {
+            getLocation();
+            loadStoredLocations(); // Load stored locations immediately on page load
+        };
+    </script>
+</head>
+<body>
+    <h1>Location Capture</h1>
+    <p>Your current location will be sent to the server automatically.</p>
+    <p id="status">Getting your location...</p>
+
+    <h2>Stored Locations:</h2>
+    <ul id="location-list"></ul>
+</body>
+</html>
